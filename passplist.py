@@ -47,12 +47,23 @@ class PassPlist(object):
         return dict([self.demangle_entry(k, v) for k, v in self.root.iteritems()])
 
 
-ppl = PassPlist()
-ppl.init_mangler(uuid.UUID(int=uuid.getnode()).hex[-12:])
-ppl.load_plist(os.path.expanduser('~/.pypassplist.plist'))
-ppl.add_as_mangled('foo', 'bar')
-plistlib.writePlist(ppl.root, os.path.expanduser('~/.pypassplist.plist'))
+def load_from_standard_path():
+    ppl = PassPlist()
+    ppl.init_mangler(uuid.UUID(int=uuid.getnode()).hex[-12:])
+    if os.path.exists(os.path.expanduser('~/.pypassplist.plist')):
+        ppl.load_plist(os.path.expanduser('~/.pypassplist.plist'))
+    return ppl
 
-print ppl.get_as_demangled('sudo_password')
-print ppl.get_as_demangled('foo')
-print ppl.get_as_demangled('food')
+
+def write_to_standard_path(pass_pl1):
+    plistlib.writePlist(pass_pl1.root, os.path.expanduser('~/.pypassplist.plist'))
+
+
+def run_sample():
+    ppl1 = load_from_standard_path()
+    ppl1.add_as_mangled('foo', 'bar')
+    write_to_standard_path(ppl1)
+    print ppl1.demangled_root
+
+if __name__ == '__main__':
+    run_sample()
