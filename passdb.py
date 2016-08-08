@@ -9,7 +9,7 @@ class HashMangler(object):
     def __init__(self, seed):
         assert isinstance(seed, unicode) or isinstance(seed, str)
         hash_str = hashlib.sha256(seed).hexdigest()
-        self._hash_chars = [int('0x' + hash_str[x - 1] + hash_str[x], 16) for x in range(1, len(hash_str), 2)]
+        self._hash_chars = [int(''.join(('0x', hash_str[x - 1], hash_str[x])), 16) for x in range(1, len(hash_str), 2)]
         self._hash_len = len(self._hash_chars)
 
     def talk(self, res_len):
@@ -19,13 +19,13 @@ class HashMangler(object):
     def mangle(self, input_str):
         assert isinstance(input_str, unicode) or isinstance(input_str, str)
         offsets = self.talk(len(input_str))
-        input_ords = [ord(c) for c in input_str]
+        input_ords = map(ord, input_str)
         return u''.join([unichr(y + z) for y, z in zip(input_ords, offsets)])
 
     def demangle(self, mangled_str):
-        assert isinstance(mangled_str, unicode)
+        assert isinstance(mangled_str, unicode) or isinstance(mangled_str, str)
         offsets = self.talk(len(mangled_str))
-        mangled_ords = [ord(c) for c in mangled_str]
+        mangled_ords = map(ord, mangled_str)
         return u''.join([unichr(y - z) for y, z in zip(mangled_ords, offsets)])
 
 
@@ -63,27 +63,30 @@ def read_db(passkey, db_conn):
 def save_seed(new_seed_str):
     pickle.dump(new_seed_str, open('seed.p', 'wb'))
 
-# TODO: run save_seed with a passkey if you like
 
-seed_str = pickle.load(open('seed.p', 'rb'))
+def main():
+    # TODO: run save_seed with a passkey if you like
 
-conn = sqlite3.connect('passes.db')
-c = conn.cursor()
-c.row_factory = sqlite3.Row
+    seed_str = pickle.load(open('seed.p', 'rb'))
 
+    conn = sqlite3.connect('passes.db')
+    c = conn.cursor()
+    c.row_factory = sqlite3.Row
 
-test1 = HashMangler(seed_str)
+    test1 = HashMangler(seed_str)
 
-s1a = test1.mangle('banana')
-s2a = test1.mangle('The quick brown fox jumped.')
-s1b = test1.demangle(s1a)
-s2b = test1.demangle(s2a)
+    s1a = test1.mangle('banana')
+    s2a = test1.mangle('The quick brown fox jumped.')
+    s1b = test1.demangle(s1a)
+    s2b = test1.demangle(s2a)
 
-print s1a
-print s1b
+    print s1a
+    print s1b
 
-print s2a
-print s2b
+    print s2a
+    print s2b
 
+    read_db(seed_str, conn)
 
-read_db(seed_str, conn)
+if __name__ == '__main__':
+    main()
